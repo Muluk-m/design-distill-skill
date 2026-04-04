@@ -1,115 +1,139 @@
-# Design DNA
+# Design Distill
 
-> Extract design systems from any website or project. Reuse them to generate pixel-faithful UIs. No more generic AI look.
+> Distill any website's design system into a reusable `DESIGN.md`. Generate style-consistent UIs — no more generic AI look.
+
+Compatible with the [Google Stitch DESIGN.md specification](https://stitch.withgoogle.com/docs/design-md/overview).
 
 ## Why
 
-Every AI-generated UI looks the same — the same gradients, the same rounded cards, the same blue buttons. Design DNA fixes this by capturing the *real* visual identity of any website and storing it locally. Next time you need a page, just say "use the Linear style" and get output that actually looks like Linear.
+Every AI-generated UI looks the same — same gradients, same rounded cards, same blue buttons. Design Distill fixes this by capturing the *real* visual identity of any website and storing it as a structured document. Next time you need a page, just describe what you want and the AI generates code that actually matches the original design.
 
 ## How It Works
 
 ```
-  "Extract linear.app"          "Design a login page
-        │                        in Linear style"
-        ▼                              │
-  ┌───────────┐                        ▼
-  │ Screenshot │─── analyze ───▶ ~/.config/design-dna/
-  │ + CSS      │               ├── styles/linear.md
-  └───────────┘                └── screenshots/linear/
-                                       │
-                                       ▼
-                                 Generated code that
-                                 actually looks like
-                                 the original design
+  "Distill linear.app"            "Make a pricing page"
+        │                               │
+        ▼                               ▼
+  ┌──────────────┐              ┌──────────────────┐
+  │  dembrandt   │              │ Load              │
+  │  (tokens)    │              │ DESIGN.md         │
+  │      +       │──── save ──▶ │       +           │
+  │  screenshots │              │ Re-screenshot     │
+  │  (visual)    │              │ source site       │
+  └──────────────┘              └──────────────────┘
+                                        │
+                                        ▼
+                                  Generated code
+                                  that looks like
+                                  the original
 ```
 
-**Extract** — Your AI agent screenshots the site, pulls CSS variables and fonts, and saves a structured DNA file (colors, typography, spacing, component patterns, do/don't rules).
+**Distill** — Uses [dembrandt](https://github.com/dembrandt/dembrandt) for precise token extraction (colors, fonts, spacing, components) combined with screenshots for visual ground truth. Outputs a structured `DESIGN.md` following the [Stitch DESIGN.md format](https://stitch.withgoogle.com/docs/design-md/format). Saves to both the current project and a global style library for cross-project reuse.
 
-**Design** — Load a saved style by name. The agent reads the DNA + reference screenshots, then generates frontend code that stays true to the original.
+**Design** — Loads a design system from the project (`./DESIGN.md`) or by name from the global library ("use the linear style"), re-screenshots the source site for calibration, then generates frontend code constrained to the original palette, fonts, and component patterns.
+
+**Library** — Manage your collection of saved design systems. List available styles, load by name in any project.
 
 ## Install
 
-### Skill (for AI Agents)
-
 ```bash
-npx skills add Muluk-m/design-dna-skill
+npx skills add Muluk-m/design-distill
 ```
 
 Works with **Claude Code**, **Codex**, **Openclaw**, and any agent that supports [skills](https://skills.sh).
 
-### CLI
+### Optional: Install dembrandt
+
+For higher-quality token extraction, install [dembrandt](https://github.com/dembrandt/dembrandt):
 
 ```bash
-npm install -g design-dna
+npm install -g dembrandt
 ```
 
-The skill auto-installs the CLI if missing — no manual setup needed.
+Without dembrandt, the skill falls back to browser-based extraction (screenshots + CSS variable sampling). Both paths produce good results.
+
+> **Note:** dembrandt requires Playwright browsers. If you see a Playwright error, run `npx playwright install chromium`.
 
 ## Usage
 
 Tell your AI agent:
 
 ```
-提炼 https://linear.app 的设计系统
+Distill the design from https://linear.app
 ```
 
 ```
-Use the linear style to build a pricing page
+Extract the design system from this project
 ```
 
 ```
-参考 ./src 这个项目的 UI 风格，做一个设置页
+Make a login page (auto-loads DESIGN.md if it exists)
 ```
 
-### CLI
-
-```bash
-ddna list                          # List all saved styles
-ddna show <name>                   # Output a style's DNA to stdout
-ddna save <name> --source-url URL  # Save DNA from stdin
-ddna delete <name>                 # Remove a style and its screenshots
-ddna path <name> [screenshots]     # Print file/directory path
+```
+Build a dashboard that matches the Linear style
 ```
 
-Styles live in `~/.config/design-dna/` and are shared across all your projects.
+### Global Style Library
 
-## How the DNA Looks
+Every distilled design is saved to `~/.config/design-distill/` so you can reuse it across projects:
 
-Each style is a Markdown file with structured design tokens:
+```
+List my styles                              # see all saved designs
+Use the linear style to make a settings page  # load from library
+Distill the design from https://vercel.com    # auto-saves to library
+```
+
+### What You Get
+
+A `DESIGN.md` file with structured design tokens:
 
 ```markdown
-# Linear Design DNA
+# Design System
 
 > source_url: https://linear.app
+> distilled: 2026-04-04
 
-## Visual Personality
-Color base: light — background `#FFFFFF`
-Mood: minimal, focused, developer-oriented
+## Overview
+A focused, minimal interface for a developer productivity tool.
+Clean lines, low visual noise, high information density.
 
-## Color System
-| Name       | Value     | Usage          |
-|------------|-----------|----------------|
-| Background | `#FFFFFF` | Page background|
-| Accent     | `#5E6AD2` | Primary CTA    |
+**Tone**: light — background `#FFFFFF`
+**Personality**: minimal, precise, developer-focused
+**Anti-patterns**: no gradients, no rounded-full buttons, no stock photo heroes
+
+## Colors
+- **Primary** (`#5E6AD2`): CTAs, active states
+- **Secondary** (`#6074B9`): Supporting actions
+- **Surface** (`#FFFFFF`): Page background
+- **On-surface** (`#1A1A2E`): Primary text
 ...
 
-## Component Vocabulary
+## Components
 ### Primary Button
 background: #5E6AD2; color: #FFFFFF; border-radius: 8px;
 ```
 
+### Migrating from DESIGN-DISTILL.md
+
+If you have an existing `DESIGN-DISTILL.md` from an earlier version, the skill will still detect and use it. To migrate, simply rename the file:
+
+```bash
+mv DESIGN-DISTILL.md DESIGN.md
+```
+
+The content format is compatible — no other changes needed.
+
 ## Project Structure
 
 ```
-design-dna-skill/
-├── skills/design-dna/        # AI agent skill
-│   ├── SKILL.md              # Extraction + design workflows
+design-distill/
+├── skills/design-distill/
+│   ├── SKILL.md              # Skill definition (distill + design modes)
 │   └── references/
-│       └── template.md       # DNA document template
-├── cli/                      # ddna CLI (TypeScript)
-│   └── src/
-└── evals/
-    └── evals.json
+│       └── template.md       # DESIGN.md template
+├── README.md
+└── LICENSE
 ```
 
 ## License
