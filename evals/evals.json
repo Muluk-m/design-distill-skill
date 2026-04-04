@@ -1,0 +1,22 @@
+{
+  "skill_name": "design-dna",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "从 vercel.com 提炼设计系统，保存到当前目录下的 DESIGN-DNA.md",
+      "expected_output": "生成一个结构化的 DESIGN-DNA.md，包含：精确的颜色值（hex/rgba）、字体名称及 CDN 引用、间距系统、组件模式（按钮/卡片/输入框样式）、视觉个性描述和 Do/Don't 列表",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "帮我做一个 SaaS 产品的定价页（三档方案：Free/Pro/Enterprise），要和 Vercel 同样的风格",
+      "expected_output": "生成一个完整 HTML 页面，视觉上高度接近 Vercel 风格：近白色背景（#fafafa）、Inter/Geist 字体、近黑色主文字（#171717）、黑色 Primary 按钮、边框而非阴影区分卡片、极简排版，无通用 AI UI 味（无彩色渐变 hero、无高饱和度配色）",
+      "files": [
+        {
+          "path": "DESIGN-DNA.md",
+          "description": "预制的 Vercel 设计系统文档，作为 with-skill 版本的已有 DNA 输入"
+        }
+      ]
+    }
+  ]
+}
