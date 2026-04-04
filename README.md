@@ -1,12 +1,35 @@
 # Design Distill
 
-> Distill any website's design system into a reusable `DESIGN.md`. Generate style-consistent UIs — no more generic AI look.
+**Stop generating generic-looking UIs.** Distill any website's real design system, then generate code that actually matches.
 
-Compatible with the [Google Stitch DESIGN.md specification](https://stitch.withgoogle.com/docs/design-md/overview).
+```
+You:    "Distill linear.app, then make me a settings page"
+Agent:  → extracts colors, fonts, spacing, components from linear.app
+        → saves as DESIGN.md (Stitch-compatible)
+        → generates a settings page that looks like Linear, not like every other AI output
+```
 
-## Why
+![Without vs With Design Distill](docs/demo-comparison.png)
 
-Every AI-generated UI looks the same — same gradients, same rounded cards, same blue buttons. Design Distill fixes this by capturing the *real* visual identity of any website and storing it as a structured document. Next time you need a page, just describe what you want and the AI generates code that actually matches the original design.
+*Same prompt: "Make a settings page like Linear." Left: generic AI output. Right: with Design Distill.*
+
+## The Problem
+
+Every AI-generated UI looks the same. Same gradients, same rounded cards, same blue buttons. You ask for "a settings page like Linear" and get generic Material Design.
+
+## The Fix
+
+```bash
+npx skills add Muluk-m/design-distill
+```
+
+Then tell your AI agent:
+
+```
+Distill the design from https://linear.app
+```
+
+That's it. The skill extracts the real design tokens (colors, fonts, spacing, components) and saves them as a structured `DESIGN.md`. Every design task after that uses the real palette, real fonts, real component patterns.
 
 ## How It Works
 
@@ -15,78 +38,35 @@ Every AI-generated UI looks the same — same gradients, same rounded cards, sam
         │                               │
         ▼                               ▼
   ┌──────────────┐              ┌──────────────────┐
-  │  dembrandt   │              │ Load              │
-  │  (tokens)    │              │ DESIGN.md         │
-  │      +       │──── save ──▶ │       +           │
-  │  screenshots │              │ Re-screenshot     │
-  │  (visual)    │              │ source site       │
-  └──────────────┘              └──────────────────┘
-                                        │
+  │  dembrandt   │              │  Load DESIGN.md   │
+  │  (tokens)    │              │       +           │
+  │      +       │──── save ──▶ │  Re-screenshot    │
+  │  screenshots │              │  source site      │
+  │  (visual)    │              └──────────────────┘
+  └──────────────┘                      │
                                         ▼
-                                  Generated code
-                                  that looks like
-                                  the original
+                                  Code that looks
+                                  like the original
 ```
 
-**Distill** — Uses [dembrandt](https://github.com/dembrandt/dembrandt) for precise token extraction (colors, fonts, spacing, components) combined with screenshots for visual ground truth. Outputs a structured `DESIGN.md` following the [Stitch DESIGN.md format](https://stitch.withgoogle.com/docs/design-md/format). Saves to both the current project and a global style library for cross-project reuse.
+1. **Distill** — Extracts design tokens via [dembrandt](https://github.com/nicholasgriffintn/dembrandt) + screenshots for visual ground truth. Outputs a [Stitch-compatible](https://stitch.withgoogle.com/docs/design-md/overview) `DESIGN.md`.
 
-**Design** — Loads a design system from the project (`./DESIGN.md`) or by name from the global library ("use the linear style"), re-screenshots the source site for calibration, then generates frontend code constrained to the original palette, fonts, and component patterns.
+2. **Design** — Loads `DESIGN.md`, re-screenshots the source site for calibration, generates code constrained to the original palette and patterns.
 
-**Library** — Manage your collection of saved design systems. List available styles, load by name in any project.
-
-## Install
-
-```bash
-npx skills add Muluk-m/design-distill
-```
-
-Works with **Claude Code**, **Codex**, **Openclaw**, and any agent that supports [skills](https://skills.sh).
-
-### Optional: Install dembrandt
-
-For higher-quality token extraction, install [dembrandt](https://github.com/dembrandt/dembrandt):
-
-```bash
-npm install -g dembrandt
-```
-
-Without dembrandt, the skill falls back to browser-based extraction (screenshots + CSS variable sampling). Both paths produce good results.
-
-> **Note:** dembrandt requires Playwright browsers. If you see a Playwright error, run `npx playwright install chromium`.
+3. **Library** — Every distilled design is saved globally (`~/.config/design-distill/`). Reuse across projects by name: "use the linear style".
 
 ## Usage
 
-Tell your AI agent:
-
 ```
-Distill the design from https://linear.app
-```
-
-```
-Extract the design system from this project
-```
-
-```
-Make a login page (auto-loads DESIGN.md if it exists)
-```
-
-```
-Build a dashboard that matches the Linear style
-```
-
-### Global Style Library
-
-Every distilled design is saved to `~/.config/design-distill/` so you can reuse it across projects:
-
-```
-List my styles                              # see all saved designs
-Use the linear style to make a settings page  # load from library
-Distill the design from https://vercel.com    # auto-saves to library
+Distill the design from https://vercel.com       # extract + save
+Make a login page                                 # auto-loads DESIGN.md
+Build a dashboard in the Linear style             # loads from library
+List my styles                                    # see saved designs
 ```
 
 ### What You Get
 
-A `DESIGN.md` file with structured design tokens:
+A `DESIGN.md` with concrete, usable values:
 
 ```markdown
 # Design System
@@ -95,8 +75,7 @@ A `DESIGN.md` file with structured design tokens:
 > distilled: 2026-04-04
 
 ## Overview
-A focused, minimal interface for a developer productivity tool.
-Clean lines, low visual noise, high information density.
+Focused, minimal interface. Clean lines, low visual noise, high information density.
 
 **Tone**: light — background `#FFFFFF`
 **Personality**: minimal, precise, developer-focused
@@ -104,37 +83,21 @@ Clean lines, low visual noise, high information density.
 
 ## Colors
 - **Primary** (`#5E6AD2`): CTAs, active states
-- **Secondary** (`#6074B9`): Supporting actions
 - **Surface** (`#FFFFFF`): Page background
 - **On-surface** (`#1A1A2E`): Primary text
-...
 
 ## Components
 ### Primary Button
 background: #5E6AD2; color: #FFFFFF; border-radius: 8px;
 ```
 
-### Migrating from DESIGN-DISTILL.md
+## Compatibility
 
-If you have an existing `DESIGN-DISTILL.md` from an earlier version, the skill will still detect and use it. To migrate, simply rename the file:
+Works with **Claude Code**, **Codex**, **Openclaw**, and any agent that supports [skills](https://skills.sh).
 
-```bash
-mv DESIGN-DISTILL.md DESIGN.md
-```
+Output follows the [Google Stitch DESIGN.md specification](https://stitch.withgoogle.com/docs/design-md/overview) — compatible with any tool that reads Stitch design documents.
 
-The content format is compatible — no other changes needed.
-
-## Project Structure
-
-```
-design-distill/
-├── skills/design-distill/
-│   ├── SKILL.md              # Skill definition (distill + design modes)
-│   └── references/
-│       └── template.md       # DESIGN.md template
-├── README.md
-└── LICENSE
-```
+Dependencies ([dembrandt](https://github.com/nicholasgriffintn/dembrandt) + Playwright) are installed automatically on first use. Falls back to browser-based extraction if installation fails.
 
 ## License
 
