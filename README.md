@@ -1,67 +1,116 @@
-# Design DNA — Claude Code Skill
+# Design DNA
 
-> 提炼任意网站或本地项目的设计系统，然后用它生成同风格页面。告别千篇一律的 AI UI 味。
+> Extract design systems from any website or project. Reuse them to generate pixel-faithful UIs. No more generic AI look.
 
-## 两种模式
+## Why
 
-**提炼模式** — 从 URL 或本地项目提取设计 DNA，生成 `DESIGN-DNA.md`：
-- 截图优先：先肉眼观察背景色调、CTA 形态、排版密度，再分析 CSS
-- 精确提取：CSS 变量、计算颜色、字体引用
-- 输出结构化文档：颜色系统、字体、间距、圆角、组件词汇、Do/Don't
+Every AI-generated UI looks the same — the same gradients, the same rounded cards, the same blue buttons. Design DNA fixes this by capturing the *real* visual identity of any website and storing it locally. Next time you need a page, just say "use the Linear style" and get output that actually looks like Linear.
 
-**设计模式** — 发现已有 `DESIGN-DNA.md` 时自动进入：
-- 重新截图源网站作为视觉锚点（防止凭文字印象出偏差）
-- 严格从 DNA 调色板取色，不引入新颜色
-- 生成前端代码 / HTML / 设计稿
+## How It Works
 
-## 安装
-
-将 `design-dna/` 目录复制到你的 Claude Code skills 路径：
-
-```bash
-# 克隆到 Claude Code 全局 skills 目录
-git clone https://github.com/Mulum-m/design-dna-skill ~/.claude/skills/design-dna
+```
+  "Extract linear.app"          "Design a login page
+        │                        in Linear style"
+        ▼                              │
+  ┌───────────┐                        ▼
+  │ Screenshot │─── analyze ───▶ ~/.config/design-dna/
+  │ + CSS      │               ├── styles/linear.md
+  └───────────┘                └── screenshots/linear/
+                                       │
+                                       ▼
+                                 Generated code that
+                                 actually looks like
+                                 the original design
 ```
 
-或者只用于当前项目：
+**Extract** — Your AI agent screenshots the site, pulls CSS variables and fonts, and saves a structured DNA file (colors, typography, spacing, component patterns, do/don't rules).
+
+**Design** — Load a saved style by name. The agent reads the DNA + reference screenshots, then generates frontend code that stays true to the original.
+
+## Install
+
+### Skill (for AI Agents)
 
 ```bash
-git clone https://github.com/Mulum-m/design-dna-skill .claude/skills/design-dna
+npx skills add Muluk-m/design-dna-skill
 ```
 
-## 使用
+Works with **Claude Code**, **Codex**, **Openclaw**, and any agent that supports [skills](https://skills.sh).
 
-安装后，在 Claude Code 中直接说：
+### CLI
+
+```bash
+npm install -g design-dna
+```
+
+The skill auto-installs the CLI if missing — no manual setup needed.
+
+## Usage
+
+Tell your AI agent:
 
 ```
 提炼 https://linear.app 的设计系统
 ```
 
 ```
-帮我做一个登录页，风格和上次一样
+Use the linear style to build a pricing page
 ```
 
 ```
-参考 ./src 这个项目的 UI 风格，做一个用户设置页
+参考 ./src 这个项目的 UI 风格，做一个设置页
 ```
 
-触发词包括：`提炼设计系统`、`参考这个网站的风格`、`照这个项目的 UI 风格`、`告别 AI 味`、`帮我做个和 XX 一样风格的页面`、`extract design system`、`reference this design`。
+### CLI
 
-## 文件结构
+```bash
+ddna list                          # List all saved styles
+ddna show <name>                   # Output a style's DNA to stdout
+ddna save <name> --source-url URL  # Save DNA from stdin
+ddna delete <name>                 # Remove a style and its screenshots
+ddna path <name> [screenshots]     # Print file/directory path
+```
+
+Styles live in `~/.config/design-dna/` and are shared across all your projects.
+
+## How the DNA Looks
+
+Each style is a Markdown file with structured design tokens:
+
+```markdown
+# Linear Design DNA
+
+> source_url: https://linear.app
+
+## Visual Personality
+Color base: light — background `#FFFFFF`
+Mood: minimal, focused, developer-oriented
+
+## Color System
+| Name       | Value     | Usage          |
+|------------|-----------|----------------|
+| Background | `#FFFFFF` | Page background|
+| Accent     | `#5E6AD2` | Primary CTA    |
+...
+
+## Component Vocabulary
+### Primary Button
+background: #5E6AD2; color: #FFFFFF; border-radius: 8px;
+```
+
+## Project Structure
 
 ```
-design-dna/
-├── SKILL.md              # 主技能文件（提炼 + 设计两阶段逻辑）
-├── references/
-│   └── template.md       # DESIGN-DNA.md 输出模板（中性，无预设值）
+design-dna-skill/
+├── skills/design-dna/        # AI agent skill
+│   ├── SKILL.md              # Extraction + design workflows
+│   └── references/
+│       └── template.md       # DNA document template
+├── cli/                      # ddna CLI (TypeScript)
+│   └── src/
 └── evals/
-    └── evals.json        # 测试用例（Vercel 提取 + 定价页生成）
+    └── evals.json
 ```
-
-## 依赖
-
-- [Claude Code](https://claude.ai/code)
-- [gstack browse skill](https://github.com/garrynewman/gstack)（网站截图，提炼 URL 来源时需要）
 
 ## License
 
