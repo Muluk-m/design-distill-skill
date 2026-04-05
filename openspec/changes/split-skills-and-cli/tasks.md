@@ -22,7 +22,7 @@
 
 - [x] 3.6 实现 `diff <name>` 命令：通过 dembrandt 重新提取 source_url 的 tokens，与保存的 DESIGN.md 对比，输出 markdown 表格（Category, Token, Old Value, New Value），过滤噪声（deltaE < 5 的颜色变化、< 2px 的间距变化忽略）。Playwright 为硬依赖。
 - [x] 3.7 实现 `preview <name>` 命令：解析 DESIGN.md 生成独立 HTML（色板、字体样本、间距比例尺、组件形态），写入临时文件，跨平台打开（macOS: open, Linux: xdg-open, Windows: start）
-- [ ] 3.8 准备 bundled styles：手工提取 linear/vercel/stripe/notion/github 的 DESIGN.md，提交到 `bundled/` 目录，每次发版前验证
+- [x] 3.8 准备 bundled styles：手工提取 linear/vercel/stripe/notion/github 的 DESIGN.md，提交到 `bundled/` 目录，每次发版前验证
 
 ## 4. Skill: design:distill
 
