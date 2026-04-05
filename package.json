@@ -1,0 +1,31 @@
+{
+  "name": "design-distill",
+  "version": "0.2.0",
+  "description": "CLI for managing design system library — extract, store, and reuse design styles across projects",
+  "type": "module",
+  "bin": {
+    "design-distill": "./bin/cli.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "skills",
+    "bundled"
+  ],
+  "keywords": [
+    "design-system",
+    "design-tokens",
+    "cli",
+    "ai-agent",
+    "claude-code",
+    "design-distill"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Muluk-m/design-dna-skill"
+  },
+  "dependencies": {
+    "commander": "^13.0.0"
+  }
+}

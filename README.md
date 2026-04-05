@@ -17,87 +17,95 @@ Agent:  → extracts colors, fonts, spacing, components from linear.app
 
 Every AI-generated UI looks the same. Same gradients, same rounded cards, same blue buttons. You ask for "a settings page like Linear" and get generic Material Design.
 
-## The Fix
+## Install
 
 ```bash
+# Install skills (design:distill + design:apply)
 npx skills add Muluk-m/design-distill
+
+# Install CLI dependencies (dembrandt + Playwright)
+npx design-distill init
 ```
 
-Then tell your AI agent:
+## Two Skills, One Library
 
 ```
-Distill the design from https://linear.app
+  design:distill                    design:apply
+  ─────────────                     ────────────
+  "Distill linear.app"              "用 linear 做个博客主页"
+        │                                 │
+        ▼                                 ▼
+  ┌──────────────┐               ┌──────────────────┐
+  │  dembrandt   │               │  Load DESIGN.md   │
+  │  (tokens)    │               │       +           │
+  │      +       │── global ──▶  │  Re-screenshot    │
+  │  screenshots │    library    │  source site      │
+  │  (visual)    │               └──────────────────┘
+  └──────────────┘                       │
+                                         ▼
+                                   Code that looks
+                                   like the original
 ```
 
-That's it. The skill extracts the real design tokens (colors, fonts, spacing, components) and saves them as a structured `DESIGN.md`. Every design task after that uses the real palette, real fonts, real component patterns.
-
-## How It Works
+### design:distill — Extract Design Systems
 
 ```
-  "Distill linear.app"            "Make a pricing page"
-        │                               │
-        ▼                               ▼
-  ┌──────────────┐              ┌──────────────────┐
-  │  dembrandt   │              │  Load DESIGN.md   │
-  │  (tokens)    │              │       +           │
-  │      +       │──── save ──▶ │  Re-screenshot    │
-  │  screenshots │              │  source site      │
-  │  (visual)    │              └──────────────────┘
-  └──────────────┘                      │
-                                        ▼
-                                  Code that looks
-                                  like the original
+design:distill https://linear.app     # extract from URL → save to library
+design:distill ./my-app               # extract from local project
+design:distill                        # list saved styles
 ```
 
-1. **Distill** — Extracts design tokens via [dembrandt](https://github.com/nicholasgriffintn/dembrandt) + screenshots for visual ground truth. Outputs a [Stitch-compatible](https://stitch.withgoogle.com/docs/design-md/overview) `DESIGN.md`.
+Extracts design tokens via [dembrandt](https://github.com/nicholasgriffintn/dembrandt) + screenshots for visual ground truth. Outputs a [Stitch-compatible](https://stitch.withgoogle.com/docs/design-md/overview) `DESIGN.md` to the global library (`~/.config/design-distill/<name>/DESIGN.md`).
 
-2. **Design** — Loads `DESIGN.md`, re-screenshots the source site for calibration, generates code constrained to the original palette and patterns.
-
-3. **Library** — Every distilled design is saved globally (`~/.config/design-distill/`). Reuse across projects by name: "use the linear style".
-
-## Usage
+### design:apply — Generate with Style Consistency
 
 ```
-Distill the design from https://vercel.com       # extract + save
-Make a login page                                 # auto-loads DESIGN.md
-Build a dashboard in the Linear style             # loads from library
-List my styles                                    # see saved designs
+design:apply 用 linear 做个博客主页    # load from library by name
+design:apply 做个登录页                # auto-loads local ./DESIGN.md
 ```
 
-### What You Get
+Loads a design system, re-screenshots the source site for visual calibration, generates code strictly constrained to the original palette, fonts, and component patterns. Post-generation self-check ensures no style drift.
 
-A `DESIGN.md` with concrete, usable values:
+### CLI — Manage Your Library
 
-```markdown
-# Design System
-
-> source_url: https://linear.app
-> distilled: 2026-04-04
-
-## Overview
-Focused, minimal interface. Clean lines, low visual noise, high information density.
-
-**Tone**: light — background `#FFFFFF`
-**Personality**: minimal, precise, developer-focused
-**Anti-patterns**: no gradients, no rounded-full buttons, no stock photo heroes
-
-## Colors
-- **Primary** (`#5E6AD2`): CTAs, active states
-- **Surface** (`#FFFFFF`): Page background
-- **On-surface** (`#1A1A2E`): Primary text
-
-## Components
-### Primary Button
-background: #5E6AD2; color: #FFFFFF; border-radius: 8px;
+```bash
+npx design-distill init              # install deps + seed bundled styles
+npx design-distill list              # list saved styles
+npx design-distill list --json       # JSON output
+npx design-distill show <name>       # display DESIGN.md content
+npx design-distill path <name>       # output filesystem path
+npx design-distill remove <name>     # delete a style
+npx design-distill diff <name>       # compare saved vs. live site
+npx design-distill preview <name>    # visual HTML preview in browser
 ```
+
+## Architecture
+
+```
+design-distill/
+├── bin/cli.js                 ← CLI entry (npx design-distill)
+├── src/
+│   ├── commands/              ← init, list, show, remove, path, diff, preview
+│   └── lib/store.js           ← global library read/write
+├── skills/
+│   ├── design-distill/        ← design:distill skill
+│   │   ├── SKILL.md
+│   │   └── references/template.md
+│   └── design-apply/          ← design:apply skill
+│       └── SKILL.md
+├── bundled/                   ← pre-bundled design system snapshots
+└── package.json
+```
+
+**CLI** handles data operations (storage, dependencies, library management).
+**Skills** handle AI behavior (extraction intelligence, style-constrained generation).
+**DESIGN.md** is the interchange format between them.
 
 ## Compatibility
 
 Works with **Claude Code**, **Codex**, **Openclaw**, and any agent that supports [skills](https://skills.sh).
 
-Output follows the [Google Stitch DESIGN.md specification](https://stitch.withgoogle.com/docs/design-md/overview) — compatible with any tool that reads Stitch design documents.
-
-Dependencies ([dembrandt](https://github.com/nicholasgriffintn/dembrandt) + Playwright) are installed automatically on first use. Falls back to browser-based extraction if installation fails.
+Output follows the [Google Stitch DESIGN.md specification](https://stitch.withgoogle.com/docs/design-md/overview).
 
 ## License
 
