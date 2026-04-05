@@ -19,17 +19,17 @@ Resolve the design system based on priority:
 If the user mentions a style name (e.g., "用 linear 做个博客主页"):
 
 ```bash
-npx design-distill path <name> 2>/dev/null
+design-distill path <name> 2>/dev/null
 ```
 
 If the style exists, read its DESIGN.md:
 ```bash
-npx design-distill show <name>
+design-distill show <name>
 ```
 
 If not found, report the error and list available styles:
 ```bash
-npx design-distill list
+design-distill list
 ```
 
 ### Priority 2: Local `./DESIGN.md`
@@ -47,7 +47,7 @@ This is the project's own design system (e.g., the user is building a product an
 If neither an explicit name nor a local DESIGN.md:
 
 ```bash
-npx design-distill list
+design-distill list
 ```
 
 Display available styles and ask the user to choose one. If no styles exist at all, suggest running `design-distill` first.

@@ -10,100 +10,114 @@ import {
   cpSync,
 } from "node:fs";
 
-const BASE_DIR = join(homedir(), ".config", "design-distill");
+export interface StyleHeader {
+  source_url?: string;
+  distilled?: string;
+  name?: string;
+}
 
-function ensureDir(dir) {
+export interface CopyResult {
+  copied: string[];
+  skipped: string[];
+}
+
+function getBaseDir(): string {
+  return process.env.DESIGN_DISTILL_HOME
+    || join(homedir(), ".config", "design-distill");
+}
+
+function ensureDir(dir: string): void {
   mkdirSync(dir, { recursive: true });
 }
 
-function validateName(name) {
+function validateName(name: string): void {
   if (!/^[a-z0-9][a-z0-9._-]*$/.test(name)) {
     console.error(
       `Invalid style name: "${name}". Use lowercase letters, numbers, hyphens, dots, or underscores.`
     );
     process.exit(1);
   }
-  const resolved = resolve(BASE_DIR, name);
-  if (!resolved.startsWith(BASE_DIR)) {
+  const resolved = resolve(getBaseDir(), name);
+  if (!resolved.startsWith(getBaseDir())) {
     console.error(`Invalid style name: "${name}"`);
     process.exit(1);
   }
 }
 
-export function baseDir() {
-  ensureDir(BASE_DIR);
-  return BASE_DIR;
+export function baseDir(): string {
+  ensureDir(getBaseDir());
+  return getBaseDir();
 }
 
-export function styleDir(name) {
+export function styleDir(name: string): string {
   validateName(name);
-  return join(BASE_DIR, name);
+  return join(getBaseDir(), name);
 }
 
-export function stylePath(name) {
+export function stylePath(name: string): string {
   return join(styleDir(name), "DESIGN.md");
 }
 
-export function screenshotsDir(name) {
+export function screenshotsDir(name: string): string {
   return join(styleDir(name), "screenshots");
 }
 
-export function ensureScreenshotsDir(name) {
+export function ensureScreenshotsDir(name: string): string {
   const dir = screenshotsDir(name);
   ensureDir(dir);
   return dir;
 }
 
-export function listStyles() {
-  ensureDir(BASE_DIR);
-  return readdirSync(BASE_DIR, { withFileTypes: true })
+export function listStyles(): string[] {
+  ensureDir(getBaseDir());
+  return readdirSync(getBaseDir(), { withFileTypes: true })
     .filter(
-      (d) => d.isDirectory() && existsSync(join(BASE_DIR, d.name, "DESIGN.md"))
+      (d: { isDirectory(): boolean; name: string }) => d.isDirectory() && existsSync(join(getBaseDir(), d.name, "DESIGN.md"))
     )
-    .map((d) => d.name)
+    .map((d: { name: string }) => d.name)
     .sort();
 }
 
-export function styleExists(name) {
+export function styleExists(name: string): boolean {
   return existsSync(stylePath(name));
 }
 
-export function readStyle(name) {
+export function readStyle(name: string): string {
   return readFileSync(stylePath(name), "utf-8");
 }
 
-export function writeStyle(name, content) {
+export function writeStyle(name: string, content: string): void {
   const dir = styleDir(name);
   ensureDir(dir);
   writeFileSync(stylePath(name), content, "utf-8");
 }
 
-export function deleteStyle(name) {
+export function deleteStyle(name: string): void {
   rmSync(styleDir(name), { recursive: true, force: true });
 }
 
-export function parseDesignHeader(content) {
-  const header = {};
+export function parseDesignHeader(content: string): StyleHeader {
+  const header: StyleHeader = {};
   const sourceMatch = content.match(/>\s*source_url:\s*(.+)/);
-  if (sourceMatch) header.source_url = sourceMatch[1].trim();
+  if (sourceMatch) header.source_url = sourceMatch[1]!.trim();
   const dateMatch = content.match(/>\s*distilled:\s*(.+)/);
-  if (dateMatch) header.distilled = dateMatch[1].trim();
+  if (dateMatch) header.distilled = dateMatch[1]!.trim();
   const nameMatch = content.match(/^#\s+(.+?)(?:\s+Design\b.*)?$/m);
-  if (nameMatch) header.name = nameMatch[1].trim();
+  if (nameMatch) header.name = nameMatch[1]!.trim();
   return header;
 }
 
-export function copyBundledStyles(force = false) {
+export function copyBundledStyles(force = false): CopyResult {
   const bundledDir = join(
     new URL(".", import.meta.url).pathname,
     "..",
     "..",
     "bundled"
   );
-  if (!existsSync(bundledDir)) return [];
+  if (!existsSync(bundledDir)) return { copied: [], skipped: [] };
 
-  const copied = [];
-  const skipped = [];
+  const copied: string[] = [];
+  const skipped: string[] = [];
 
   for (const entry of readdirSync(bundledDir, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;

@@ -1,10 +1,16 @@
 import { Command } from "commander";
 import { listStyles, readStyle, parseDesignHeader } from "../lib/store.js";
 
+interface StyleEntry {
+  name: string;
+  source_url: string;
+  distilled: string;
+}
+
 export const listCommand = new Command("list")
   .description("List all saved design styles")
   .option("--json", "Output as JSON array")
-  .action((opts) => {
+  .action((opts: { json?: boolean }) => {
     const styles = listStyles();
 
     if (styles.length === 0) {
@@ -12,7 +18,7 @@ export const listCommand = new Command("list")
       return;
     }
 
-    const entries = styles.map((name) => {
+    const entries: StyleEntry[] = styles.map((name) => {
       const content = readStyle(name);
       const header = parseDesignHeader(content);
       return {
@@ -27,7 +33,6 @@ export const listCommand = new Command("list")
       return;
     }
 
-    // Table output
     const nameW = Math.max(6, ...entries.map((e) => e.name.length));
     const urlW = Math.max(10, ...entries.map((e) => e.source_url.length));
 

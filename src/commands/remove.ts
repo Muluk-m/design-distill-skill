@@ -6,7 +6,7 @@ export const removeCommand = new Command("remove")
   .description("Delete a saved design style")
   .argument("<name>", "Style name")
   .option("-y, --yes", "Skip confirmation prompt")
-  .action(async (name, opts) => {
+  .action(async (name: string, opts: { yes?: boolean }) => {
     if (!styleExists(name)) {
       console.error(`Style '${name}' not found.`);
       process.exit(1);

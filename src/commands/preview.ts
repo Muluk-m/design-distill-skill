@@ -4,119 +4,20 @@ import { writeFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { Command } from "commander";
 import { styleExists, readStyle, parseDesignHeader } from "../lib/store.js";
+import type { StyleHeader } from "../lib/store.js";
+import { extractOverview, extractColors, extractTypography, extractSpacing, extractComponents } from "../lib/parsers.js";
+import { isDark, contrastColor, surfaceColor } from "../lib/color.js";
+import type { Overview, ColorEntry, TypographyEntry, ComponentEntry } from "../types.js";
 
-function extractOverview(content) {
-  const section = content.match(/## Overview\n([\s\S]*?)(?=\n---|\n## )/);
-  if (!section) return {};
-  const text = section[1];
-  const toneMatch = text.match(/\*\*Tone\*\*:\s*(\w+)\s*.*?`(#[0-9a-fA-F]{3,8})`/);
-  const personalityMatch = text.match(/\*\*Personality\*\*:\s*(.+)/);
-  const antiMatch = text.match(/\*\*Anti-patterns\*\*:\s*(.+)/);
-  const descLines = text.split("\n").filter((l) => l && !l.startsWith("**"));
-  return {
-    description: descLines.join(" ").trim(),
-    tone: toneMatch?.[1] || "neutral",
-    bgColor: toneMatch?.[2] || "#ffffff",
-    personality: personalityMatch?.[1]?.trim() || "",
-    antiPatterns: antiMatch?.[1]?.trim() || "",
-  };
-}
-
-function extractColors(content) {
-  const colors = [];
-  const section = content.match(/## Colors\n([\s\S]*?)(?=\n## |\n---)/);
-  if (!section) return colors;
-  for (const line of section[1].split("\n")) {
-    const m = line.match(/^-\s+\*\*(.+?)\*\*\s*\(`(#[0-9a-fA-F]{3,8})`\):\s*(.*)/);
-    if (m) colors.push({ name: m[1], hex: m[2], desc: m[3].trim() });
-  }
-  return colors;
-}
-
-function extractTypography(content) {
-  const typo = [];
-  const section = content.match(/## Typography\n([\s\S]*?)(?=\n## |\n---)/);
-  if (!section) return typo;
-  for (const line of section[1].split("\n")) {
-    const m = line.match(/^-\s+\*\*(.+?)\*\*:\s*`(.+?)`/);
-    if (m) typo.push({ name: m[1], value: m[2] });
-  }
-  return typo;
-}
-
-function extractSpacing(content) {
-  const spacing = [];
-  const section = content.match(/## Spacing\n([\s\S]*?)(?=\n## |\n---)/);
-  if (!section) return spacing;
-  for (const line of section[1].split("\n")) {
-    const bullet = line.match(/^-\s+`(\d+(?:px|rem|em))`/);
-    if (bullet) { spacing.push(bullet[1]); continue; }
-    const table = line.match(/\|\s*\d+(?:px|rem|em)\s*\|/);
-    if (table) {
-      for (const m of line.matchAll(/(\d+)px/g)) {
-        const v = m[1] + "px";
-        if (!spacing.includes(v)) spacing.push(v);
-      }
-      continue;
-    }
-    const base = line.match(/\*\*.*?\*\*:?\s*(\d+(?:px|rem|em))/);
-    if (base && !spacing.includes(base[1])) spacing.push(base[1]);
-    const prop = line.match(/^-\s+.+?:\s*`?(\d+(?:px|rem|em))/);
-    if (prop && !spacing.includes(prop[1])) spacing.push(prop[1]);
-  }
-  return spacing.sort((a, b) => parseInt(a) - parseInt(b)).filter((v) => parseInt(v) <= 128);
-}
-
-function extractComponents(content) {
-  const components = [];
-  const section = content.match(/## Components\n([\s\S]*?)(?=\n## |\n---)/);
-  if (!section) return components;
-  const parts = section[1].split(/\n### /);
-  for (const part of parts.slice(1)) {
-    const nameEnd = part.indexOf("\n");
-    const name = part.slice(0, nameEnd).trim();
-    const cssMatch = part.match(/```css\n([\s\S]*?)```/);
-    const css = cssMatch ? cssMatch[1].trim() : "";
-    const props = {};
-    for (const line of css.split("\n")) {
-      const m = line.match(/^\s*([\w-]+):\s*(.+?);/);
-      if (m) props[m[1]] = m[2].trim();
-    }
-    if (name) components.push({ name, css, props });
-  }
-  return components;
-}
-
-function isDark(hex) {
-  const h = hex.replace("#", "");
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return (r * 299 + g * 587 + b * 114) / 1000 < 128;
-}
-
-function contrastColor(hex) {
-  return isDark(hex) ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.85)";
-}
-
-function subtleBorder(dark) {
-  return dark
-    ? "1px solid rgba(255,255,255,0.08)"
-    : "1px solid rgba(0,0,0,0.08)";
-}
-
-function surfaceColor(bgHex, dark) {
-  if (dark) {
-    const h = bgHex.replace("#", "");
-    const r = Math.min(255, parseInt(h.slice(0, 2), 16) + 12);
-    const g = Math.min(255, parseInt(h.slice(2, 4), 16) + 12);
-    const b = Math.min(255, parseInt(h.slice(4, 6), 16) + 12);
-    return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
-  }
-  return "#ffffff";
-}
-
-function generateHtml(name, header, overview, colors, typography, spacing, components) {
+export function generateHtml(
+  name: string,
+  header: StyleHeader,
+  overview: Overview,
+  colors: ColorEntry[],
+  typography: TypographyEntry[],
+  spacing: string[],
+  components: ComponentEntry[],
+): string {
   const nativeDark = isDark(overview.bgColor);
   const accentColor = colors.find(
     (c) =>
@@ -128,8 +29,8 @@ function generateHtml(name, header, overview, colors, typography, spacing, compo
     ? `${fontEntry.value}, system-ui, sans-serif`
     : "system-ui, -apple-system, sans-serif";
 
-  const groupColors = (list) => {
-    const groups = {};
+  const groupColors = (list: ColorEntry[]): Record<string, ColorEntry[]> => {
+    const groups: Record<string, ColorEntry[]> = {};
     for (const c of list) {
       let group = "Other";
       const n = c.name.toLowerCase();
@@ -139,14 +40,14 @@ function generateHtml(name, header, overview, colors, typography, spacing, compo
       else if (/brand|accent|primary|secondary|tertiary|cta/.test(n)) group = "Brand";
       else if (/success|error|warning|info|green|red|yellow|blue|orange|purple/.test(n)) group = "Semantic";
       if (!groups[group]) groups[group] = [];
-      groups[group].push(c);
+      groups[group]!.push(c);
     }
     return groups;
   };
 
   const colorGroups = groupColors(colors);
 
-  const renderColorGroup = (groupName, items) => `
+  const renderColorGroup = (groupName: string, items: ColorEntry[]): string => `
     <div class="color-group">
       <h3>${groupName}</h3>
       <div class="color-grid">
@@ -161,7 +62,7 @@ function generateHtml(name, header, overview, colors, typography, spacing, compo
       </div>
     </div>`;
 
-  const renderButtons = () => {
+  const renderButtons = (): string => {
     const primary = components.find((c) => /primary.*(button|btn)/i.test(c.name));
     const secondary = components.find((c) => /secondary.*(button|btn)/i.test(c.name));
     if (!primary && !secondary) return "";
@@ -179,7 +80,7 @@ function generateHtml(name, header, overview, colors, typography, spacing, compo
       </div>`;
   };
 
-  const renderCard = () => {
+  const renderCard = (): string => {
     const card = components.find((c) => /card/i.test(c.name));
     if (!card) return "";
     const style = Object.entries(card.props).map(([k, v]) => `${k}:${v}`).join(";");
@@ -252,221 +153,71 @@ function generateHtml(name, header, overview, colors, typography, spacing, compo
 
     .page { max-width: 960px; margin: 0 auto; padding: 48px 24px 96px; }
 
-    /* Theme toggle */
     .theme-toggle {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      display: flex;
-      align-items: center;
-      gap: 0;
-      background: var(--toggle-bg);
-      border: var(--border);
-      border-radius: 999px;
-      padding: 3px;
-      z-index: 100;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      position: fixed; top: 20px; right: 20px;
+      display: flex; align-items: center; gap: 0;
+      background: var(--toggle-bg); border: var(--border);
+      border-radius: 999px; padding: 3px; z-index: 100;
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     }
     .theme-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-      border: none;
-      border-radius: 999px;
-      background: transparent;
-      color: var(--toggle-fg);
-      cursor: pointer;
-      font-size: 14px;
-      transition: background 0.2s, color 0.2s;
+      display: flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; border: none; border-radius: 999px;
+      background: transparent; color: var(--toggle-fg);
+      cursor: pointer; font-size: 14px; transition: background 0.2s, color 0.2s;
     }
     .theme-btn:hover { background: var(--toggle-hover); }
     .theme-btn.active {
-      background: var(--accent);
-      color: white;
+      background: var(--accent); color: white;
       box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     }
     .native-badge {
-      position: fixed;
-      top: 58px;
-      right: 20px;
-      font-size: 0.65rem;
-      color: var(--fg-dim);
-      text-align: center;
-      z-index: 100;
-      letter-spacing: 0.03em;
+      position: fixed; top: 58px; right: 20px;
+      font-size: 0.65rem; color: var(--fg-dim);
+      text-align: center; z-index: 100; letter-spacing: 0.03em;
     }
 
-    .header {
-      margin-bottom: 48px;
-      padding-bottom: 32px;
-      border-bottom: var(--border);
-    }
-    .header-eyebrow {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--accent);
-      margin-bottom: 12px;
-      font-weight: 600;
-    }
-    .header h1 {
-      font-size: 2.5rem;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      line-height: 1.1;
-      margin-bottom: 12px;
-    }
-    .header-meta {
-      font-size: 0.875rem;
-      color: var(--fg-muted);
-    }
+    .header { margin-bottom: 48px; padding-bottom: 32px; border-bottom: var(--border); }
+    .header-eyebrow { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 12px; font-weight: 600; }
+    .header h1 { font-size: 2.5rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 12px; }
+    .header-meta { font-size: 0.875rem; color: var(--fg-muted); }
     .header-meta a { color: var(--accent); text-decoration: none; }
-    .header-personality {
-      display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;
-    }
-    .tag {
-      font-size: 0.75rem;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: var(--tag-bg);
-      color: var(--fg-muted);
-      border: var(--border);
-    }
+    .header-personality { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+    .tag { font-size: 0.75rem; padding: 4px 10px; border-radius: 999px; background: var(--tag-bg); color: var(--fg-muted); border: var(--border); }
 
     .section { margin-bottom: 48px; }
-    .section-title {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--fg-dim);
-      margin-bottom: 20px;
-      font-weight: 600;
-    }
+    .section-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--fg-dim); margin-bottom: 20px; font-weight: 600; }
 
-    /* Colors */
     .color-group { margin-bottom: 24px; }
-    .color-group h3 {
-      font-size: 0.8rem;
-      color: var(--fg-muted);
-      margin-bottom: 12px;
-      font-weight: 500;
-    }
-    .color-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 12px;
-    }
-    .color-card {
-      border-radius: 8px;
-      overflow: hidden;
-      border: var(--border);
-      background: var(--surface);
-      transition: background 0.3s, border 0.3s;
-    }
+    .color-group h3 { font-size: 0.8rem; color: var(--fg-muted); margin-bottom: 12px; font-weight: 500; }
+    .color-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+    .color-card { border-radius: 8px; overflow: hidden; border: var(--border); background: var(--surface); transition: background 0.3s, border 0.3s; }
     .color-swatch { height: 64px; width: 100%; }
     .color-info { padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; }
-    .color-name {
-      font-size: 0.75rem;
-      font-weight: 500;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .color-hex {
-      font-size: 0.7rem;
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      color: var(--fg-muted);
-      background: none;
-    }
+    .color-name { font-size: 0.75rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .color-hex { font-size: 0.7rem; font-family: 'SF Mono', 'Fira Code', monospace; color: var(--fg-muted); background: none; }
 
-    /* Typography */
     .type-scale { display: flex; flex-direction: column; gap: 2px; }
-    .type-row {
-      display: flex;
-      align-items: baseline;
-      padding: 12px 16px;
-      border-radius: 6px;
-      transition: background 0.15s;
-    }
+    .type-row { display: flex; align-items: baseline; padding: 12px 16px; border-radius: 6px; transition: background 0.15s; }
     .type-row:hover { background: var(--hover); }
-    .type-label {
-      width: 140px;
-      flex-shrink: 0;
-      font-size: 0.75rem;
-      color: var(--fg-muted);
-      font-weight: 500;
-    }
-    .type-value {
-      font-size: 0.8rem;
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      color: var(--fg-dim);
-      margin-left: auto;
-      padding-left: 16px;
-    }
+    .type-label { width: 140px; flex-shrink: 0; font-size: 0.75rem; color: var(--fg-muted); font-weight: 500; }
+    .type-value { font-size: 0.8rem; font-family: 'SF Mono', 'Fira Code', monospace; color: var(--fg-dim); margin-left: auto; padding-left: 16px; }
 
-    /* Spacing */
     .spacing-scale { display: flex; flex-direction: column; gap: 6px; }
     .spacing-row { display: flex; align-items: center; gap: 12px; padding: 4px 0; }
-    .spacing-label {
-      width: 48px;
-      flex-shrink: 0;
-      font-size: 0.75rem;
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      color: var(--fg-muted);
-      text-align: right;
-    }
-    .spacing-bar-track {
-      flex: 1;
-      height: 24px;
-      border-radius: 4px;
-      background: var(--hover);
-      overflow: hidden;
-    }
-    .spacing-bar {
-      height: 100%;
-      border-radius: 4px;
-      background: var(--accent);
-      opacity: var(--bar-opacity);
-      transition: opacity 0.15s;
-    }
+    .spacing-label { width: 48px; flex-shrink: 0; font-size: 0.75rem; font-family: 'SF Mono', 'Fira Code', monospace; color: var(--fg-muted); text-align: right; }
+    .spacing-bar-track { flex: 1; height: 24px; border-radius: 4px; background: var(--hover); overflow: hidden; }
+    .spacing-bar { height: 100%; border-radius: 4px; background: var(--accent); opacity: var(--bar-opacity); transition: opacity 0.15s; }
     .spacing-row:hover .spacing-bar { opacity: var(--bar-hover-opacity); }
 
-    /* Components */
-    .component-showcase {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-    }
+    .component-showcase { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
     @media (max-width: 640px) { .component-showcase { grid-template-columns: 1fr; } }
-    .component-panel {
-      border: var(--border);
-      border-radius: 10px;
-      padding: 24px;
-      background: var(--surface);
-      transition: background 0.3s, border 0.3s;
-    }
-    .component-panel-title {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--fg-dim);
-      margin-bottom: 16px;
-      font-weight: 600;
-    }
+    .component-panel { border: var(--border); border-radius: 10px; padding: 24px; background: var(--surface); transition: background 0.3s, border 0.3s; }
+    .component-panel-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg-dim); margin-bottom: 16px; font-weight: 600; }
     .button-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
     .sample-card { border-radius: 8px; }
 
-    .footer {
-      margin-top: 64px;
-      padding-top: 24px;
-      border-top: var(--border);
-      font-size: 0.75rem;
-      color: var(--fg-dim);
-      text-align: center;
-    }
+    .footer { margin-top: 64px; padding-top: 24px; border-top: var(--border); font-size: 0.75rem; color: var(--fg-dim); text-align: center; }
   </style>
 </head>
 <body>
@@ -557,7 +308,7 @@ function generateHtml(name, header, overview, colors, typography, spacing, compo
 </html>`;
 }
 
-function openInBrowser(filePath) {
+function openInBrowser(filePath: string): void {
   const os = platform();
   try {
     if (os === "darwin") execSync(`open "${filePath}"`);
@@ -571,7 +322,7 @@ function openInBrowser(filePath) {
 export const previewCommand = new Command("preview")
   .description("Generate a visual HTML preview of a design system")
   .argument("<name>", "Style name")
-  .action((name) => {
+  .action((name: string) => {
     if (!styleExists(name)) {
       console.error(`Style '${name}' not found.`);
       process.exit(1);

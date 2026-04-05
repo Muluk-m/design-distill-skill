@@ -15,8 +15,10 @@ argument-hint: "<URL 或本地项目路径>"
 When invoked without arguments, list all saved styles:
 
 ```bash
-npx design-distill list
+design-distill list
 ```
+
+If `design-distill` is not found, suggest: "Run `npx design-distill init` to install the CLI globally."
 
 Display the result and ask what the user wants to do next.
 
@@ -103,14 +105,14 @@ Assemble the document using the structure from `references/template.md`.
 
 **Check for collision:**
 ```bash
-npx design-distill path <name> 2>/dev/null
+design-distill path <name> 2>/dev/null
 ```
 
 If the style exists, ask: "Style `<name>` already exists. Overwrite or choose a different name?"
 
 **Save:**
 ```bash
-npx design-distill show <name> 2>/dev/null  # verify after save
+design-distill show <name> 2>/dev/null  # verify after save
 ```
 
 Write the DESIGN.md to `~/.config/design-distill/<name>/DESIGN.md`:

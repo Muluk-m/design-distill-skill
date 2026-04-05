@@ -1,17 +1,25 @@
 {
   "name": "design-distill",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "CLI for managing design system library — extract, store, and reuse design styles across projects",
   "type": "module",
   "bin": {
-    "design-distill": "./bin/cli.js"
+    "design-distill": "./dist/cli.mjs"
   },
   "files": [
-    "bin",
-    "src",
+    "dist",
     "skills",
     "bundled"
   ],
+  "scripts": {
+    "build": "tsdown",
+    "prepare": "tsdown",
+    "prepublishOnly": "tsdown",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
   "keywords": [
     "design-system",
     "design-tokens",
@@ -27,5 +35,11 @@
   },
   "dependencies": {
     "commander": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.2",
+    "tsdown": "^0.21.7",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
   }
 }

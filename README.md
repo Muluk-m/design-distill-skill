@@ -69,24 +69,25 @@ Loads a design system, re-screenshots the source site for visual calibration, ge
 ### CLI — Manage Your Library
 
 ```bash
-npx design-distill init              # install deps + seed bundled styles
-npx design-distill list              # list saved styles
-npx design-distill list --json       # JSON output
-npx design-distill show <name>       # display DESIGN.md content
-npx design-distill path <name>       # output filesystem path
-npx design-distill remove <name>     # delete a style
-npx design-distill diff <name>       # compare saved vs. live site
-npx design-distill preview <name>    # visual HTML preview in browser
+npx design-distill init              # install deps + CLI globally
+design-distill list                  # list saved styles
+design-distill list --json           # JSON output
+design-distill show <name>           # display DESIGN.md content
+design-distill path <name>           # output filesystem path
+design-distill remove <name>         # delete a style
+design-distill diff <name>           # compare saved vs. live site
+design-distill preview <name>        # visual HTML preview in browser
 ```
 
 ## Architecture
 
 ```
 design-distill/
-├── bin/cli.js                 ← CLI entry (npx design-distill)
 ├── src/
+│   ├── cli.ts                 ← CLI entry (TypeScript)
+│   ├── types.ts               ← shared type definitions
 │   ├── commands/              ← init, list, show, remove, path, diff, preview
-│   └── lib/store.js           ← global library read/write
+│   └── lib/store.ts           ← global library read/write
 ├── skills/
 │   ├── design-distill/        ← design-distill skill
 │   │   ├── SKILL.md
