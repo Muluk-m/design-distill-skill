@@ -41,13 +41,36 @@ function extractTypographyFromContent(content) {
 
 function extractSpacingFromContent(content) {
   const spacing = [];
-  const section = content.match(/## Spacing\n([\s\S]*?)(?=\n## |\n---|\Z)/);
+  const section = content.match(/## Spacing\n([\s\S]*?)(?=\n## |\n---)/);
   if (!section) return spacing;
 
   for (const line of section[1].split("\n")) {
-    const match = line.match(/^-\s+`(\d+(?:px|rem|em))`/);
-    if (match) {
-      spacing.push(match[1]);
+    // Format: - `8px` — description
+    const bulletMatch = line.match(/^-\s+`(\d+(?:px|rem|em))`/);
+    if (bulletMatch) {
+      spacing.push(bulletMatch[1]);
+      continue;
+    }
+    // Format: | `space-X` | 8px | usage |  (table row)
+    const tableMatch = line.match(/\|\s*\d+(?:px|rem|em)\s*\|/);
+    if (tableMatch) {
+      const vals = [...line.matchAll(/(\d+)px/g)].map((m) => m[1] + "px");
+      for (const v of vals) {
+        if (!spacing.includes(v)) spacing.push(v);
+      }
+      continue;
+    }
+    // Format: **Base unit**: 8px
+    const baseMatch = line.match(/\*\*.*?\*\*:?\s*(\d+(?:px|rem|em))/);
+    if (baseMatch && !spacing.includes(baseMatch[1])) {
+      spacing.push(baseMatch[1]);
+    }
+    // Format: - Button padding: `12px 16px` or - Button padding: 12px 16px
+    const propMatch = line.match(
+      /^-\s+.+?:\s*`?(\d+(?:px|rem|em))/
+    );
+    if (propMatch && !spacing.includes(propMatch[1])) {
+      spacing.push(propMatch[1]);
     }
   }
   return spacing;
