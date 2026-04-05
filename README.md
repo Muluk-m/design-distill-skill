@@ -20,7 +20,7 @@ Every AI-generated UI looks the same. Same gradients, same rounded cards, same b
 ## Install
 
 ```bash
-# Install skills (design:distill + design:apply)
+# Install skills (design-distill + design-apply)
 npx skills add Muluk-m/design-distill
 
 # Install CLI dependencies (dembrandt + Playwright)
@@ -30,8 +30,8 @@ npx design-distill init
 ## Two Skills, One Library
 
 ```
-  design:distill                    design:apply
-  ─────────────                     ────────────
+  design-distill                    design-apply
+  ──────────────                    ────────────
   "Distill linear.app"              "用 linear 做个博客主页"
         │                                 │
         ▼                                 ▼
@@ -47,21 +47,21 @@ npx design-distill init
                                    like the original
 ```
 
-### design:distill — Extract Design Systems
+### design-distill — Extract Design Systems
 
 ```
-design:distill https://linear.app     # extract from URL → save to library
-design:distill ./my-app               # extract from local project
-design:distill                        # list saved styles
+design-distill https://linear.app     # extract from URL → save to library
+design-distill ./my-app               # extract from local project
+design-distill                        # list saved styles
 ```
 
 Extracts design tokens via [dembrandt](https://github.com/nicholasgriffintn/dembrandt) + screenshots for visual ground truth. Outputs a [Stitch-compatible](https://stitch.withgoogle.com/docs/design-md/overview) `DESIGN.md` to the global library (`~/.config/design-distill/<name>/DESIGN.md`).
 
-### design:apply — Generate with Style Consistency
+### design-apply — Generate with Style Consistency
 
 ```
-design:apply 用 linear 做个博客主页    # load from library by name
-design:apply 做个登录页                # auto-loads local ./DESIGN.md
+design-apply 用 linear 做个博客主页    # load from library by name
+design-apply 做个登录页                # auto-loads local ./DESIGN.md
 ```
 
 Loads a design system, re-screenshots the source site for visual calibration, generates code strictly constrained to the original palette, fonts, and component patterns. Post-generation self-check ensures no style drift.
@@ -88,10 +88,10 @@ design-distill/
 │   ├── commands/              ← init, list, show, remove, path, diff, preview
 │   └── lib/store.js           ← global library read/write
 ├── skills/
-│   ├── design-distill/        ← design:distill skill
+│   ├── design-distill/        ← design-distill skill
 │   │   ├── SKILL.md
 │   │   └── references/template.md
-│   └── design-apply/          ← design:apply skill
+│   └── design-apply/          ← design-apply skill
 │       └── SKILL.md
 ├── bundled/                   ← pre-bundled design system snapshots
 └── package.json

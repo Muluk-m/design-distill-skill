@@ -1,5 +1,5 @@
 ---
-name: design:distill
+name: design-distill
 description: |
   Extract a design system from a website URL or local project into a structured DESIGN.md document
   (compatible with Google Stitch DESIGN.md specification). Saves to global library only
@@ -93,7 +93,7 @@ Assemble the document using the structure from `references/template.md`.
 **Key principles:**
 - Every value must be concrete — write `#1a1a2e`, not "a dark blue"
 - Visual judgments (light/dark, personality) come from screenshots, not assumptions
-- Include `source_url` in the header for design:apply to re-screenshot
+- Include `source_url` in the header for design-apply to re-screenshot
 
 ### Step 4: Save to Global Library Only
 
@@ -126,7 +126,7 @@ Previous screenshots are overwritten on re-distill.
 The distilled design system belongs to the global library, not the current project.
 
 **Completion message:**
-> "Saved to global library as `<name>`. Use `design:apply 用 <name> 做个 <页面>` to generate with this style."
+> "Saved to global library as `<name>`. Use `design-apply 用 <name> 做个 <页面>` to generate with this style."
 
 ---
 

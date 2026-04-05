@@ -1,6 +1,6 @@
 # Design System
 
-> source_url: [source URL, used by design:apply for re-screenshotting]
+> source_url: [source URL, used by design-apply for re-screenshotting]
 > distilled: [date]
 
 ---

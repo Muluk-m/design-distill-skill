@@ -1,5 +1,5 @@
 ---
-name: design:apply
+name: design-apply
 description: |
   Generate style-consistent frontend code using a saved design system from the global library
   or a local DESIGN.md. Loads the design system, re-screenshots the source site for visual
@@ -50,7 +50,7 @@ If neither an explicit name nor a local DESIGN.md:
 npx design-distill list
 ```
 
-Display available styles and ask the user to choose one. If no styles exist at all, suggest running `design:distill` first.
+Display available styles and ask the user to choose one. If no styles exist at all, suggest running `design-distill` first.
 
 ---
 
