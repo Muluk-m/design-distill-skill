@@ -1,6 +1,6 @@
 # Design Distill
 
-**Stop generating generic-looking UIs.** Distill any website's real design system, then generate code that actually matches.
+**Stop generating generic-looking UIs.** Distill any website's real design system into a structured `DESIGN.md`, then generate code that actually matches.
 
 ```
 You:    "Distill linear.app, then make me a settings page"
@@ -17,15 +17,19 @@ Agent:  → extracts colors, fonts, spacing, components from linear.app
 
 Every AI-generated UI looks the same. Same gradients, same rounded cards, same blue buttons. You ask for "a settings page like Linear" and get generic Material Design.
 
+Design Distill solves this by extracting the *real* design tokens from a live site and constraining generation to that palette.
+
 ## Install
 
 ```bash
 # Install skills (design-distill + design-apply)
 npx skills add Muluk-m/design-distill
 
-# Install CLI dependencies (dembrandt + Playwright)
+# Install CLI + dependencies (dembrandt + Playwright)
 npx design-distill init
 ```
+
+After `init`, the `design-distill` CLI is available globally. 5 bundled design systems (GitHub, Linear, Notion, Stripe, Vercel) are pre-installed.
 
 ## Two Skills, One Library
 
@@ -49,27 +53,25 @@ npx design-distill init
 
 ### design-distill — Extract Design Systems
 
+Extracts design tokens via [dembrandt](https://github.com/nicholasgriffintn/dembrandt) + screenshots for visual ground truth. Outputs a [Stitch-compatible](https://stitch.withgoogle.com/docs/design-md/overview) `DESIGN.md` to the global library.
+
 ```
 design-distill https://linear.app     # extract from URL → save to library
 design-distill ./my-app               # extract from local project
-design-distill                        # list saved styles
 ```
 
-Extracts design tokens via [dembrandt](https://github.com/nicholasgriffintn/dembrandt) + screenshots for visual ground truth. Outputs a [Stitch-compatible](https://stitch.withgoogle.com/docs/design-md/overview) `DESIGN.md` to the global library (`~/.config/design-distill/<name>/DESIGN.md`).
-
 ### design-apply — Generate with Style Consistency
+
+Loads a design system, re-screenshots the source site for visual calibration, generates code strictly constrained to the original palette, fonts, and component patterns.
 
 ```
 design-apply 用 linear 做个博客主页    # load from library by name
 design-apply 做个登录页                # auto-loads local ./DESIGN.md
 ```
 
-Loads a design system, re-screenshots the source site for visual calibration, generates code strictly constrained to the original palette, fonts, and component patterns. Post-generation self-check ensures no style drift.
-
 ### CLI — Manage Your Library
 
 ```bash
-npx design-distill init              # install deps + CLI globally
 design-distill list                  # list saved styles
 design-distill list --json           # JSON output
 design-distill show <name>           # display DESIGN.md content
@@ -84,23 +86,33 @@ design-distill preview <name>        # visual HTML preview in browser
 ```
 design-distill/
 ├── src/
-│   ├── cli.ts                 ← CLI entry (TypeScript)
+│   ├── cli.ts                 ← entry point (TypeScript, built with tsdown)
 │   ├── types.ts               ← shared type definitions
 │   ├── commands/              ← init, list, show, remove, path, diff, preview
-│   └── lib/store.ts           ← global library read/write
+│   └── lib/
+│       ├── store.ts           ← global library read/write (~/.config/design-distill/)
+│       ├── parsers.ts         ← DESIGN.md section extractors
+│       └── color.ts           ← color utilities (contrast, deltaE, etc.)
 ├── skills/
-│   ├── design-distill/        ← design-distill skill
-│   │   ├── SKILL.md
-│   │   └── references/template.md
-│   └── design-apply/          ← design-apply skill
-│       └── SKILL.md
-├── bundled/                   ← pre-bundled design system snapshots
+│   ├── design-distill/        ← extraction skill
+│   └── design-apply/          ← generation skill
+├── tests/
+│   ├── unit/                  ← parsers, color, design-header, generate-html
+│   └── integration/           ← store round-trip, CLI e2e
+├── bundled/                   ← pre-bundled snapshots (github, linear, notion, stripe, vercel)
 └── package.json
 ```
 
 **CLI** handles data operations (storage, dependencies, library management).
 **Skills** handle AI behavior (extraction intelligence, style-constrained generation).
 **DESIGN.md** is the interchange format between them.
+
+## Development
+
+```bash
+npm run build          # build with tsdown → dist/cli.mjs
+npm test               # run 70 tests (vitest)
+```
 
 ## Compatibility
 

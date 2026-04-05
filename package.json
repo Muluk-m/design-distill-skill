@@ -1,7 +1,7 @@
 {
   "name": "design-distill",
   "version": "0.3.0",
-  "description": "CLI for managing design system library — extract, store, and reuse design styles across projects",
+  "description": "Distill any website's design system into DESIGN.md, then generate code that actually matches",
   "type": "module",
   "bin": {
     "design-distill": "./dist/cli.mjs"
@@ -31,7 +31,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Muluk-m/design-dna-skill"
+    "url": "https://github.com/Muluk-m/design-distill"
   },
   "dependencies": {
     "commander": "^13.0.0"
